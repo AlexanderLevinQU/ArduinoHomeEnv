@@ -1,2 +1,6 @@
 # Secrets file
 arduino_secrets.h
+
+#auto gen
+sketch.json
+ReadMe.adoc
