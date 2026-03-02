@@ -15,16 +15,20 @@
   which are called when their values are changed from the Dashboard.
   These functions are generated with the Thing and added at the end of this sketch.
 */
-#include "arduino_secrets.h"
+
 #include "thingProperties.h"
 #include <WiFiNINA.h>
 #include "EnvShieldSensors.h"
+#include "ShellyPlug.h"
 
+const float LOW_HUMIDIFIER = 32.0;
+const float HIGH_HUMIDIFIER = 35.0;
 char ssid[] = SECRET_SSID;        // your network SSID (name)
 char pass[] = SECRET_PASS;    // your network password (use for WPA, or use as key for WEP)
 int status = WL_IDLE_STATUS;     // the Wifi radio's status
-
 EnvShieldSensors env;
+ShellyPlug plug(SECRET_SHELLY_PLUG_HUMIDIFIER_IP);
+
 void setup() {
   // Initialize serial and wait for port to open:
   Serial.begin(9600);
@@ -36,14 +40,6 @@ void setup() {
 
   // Connect to Arduino IoT Cloud
   ArduinoCloud.begin(ArduinoIoTPreferredConnection);
-  
-  /*
-     The following function allows you to obtain more information
-     related to the state of network and IoT Cloud connection and errors
-     the higher number the more granular information you’ll get.
-     The default is 0 (only errors).
-     Maximum is 4
- */
   setDebugMessageLevel(2);
   ArduinoCloud.printDebugInfo();
 
@@ -58,32 +54,50 @@ void setup() {
   }
 
   // you're connected now, so print out the data:
-  Serial.println("You're connected to the network");
-
-  Serial.println("----------------------------------------");
-  printData();
-  Serial.println("----------------------------------------");
+  printWifiData();
 
   if (!env.begin()) 
   {
     Serial.println("Failed to initialize MKR ENV shield!");
     while (1);
   }
+
+  plug.off();
+  plug.on();
+  bool state;
+  if (plug.getState(state)) {
+      Serial.print("Shelly state: ");
+      Serial.println(state ? "ON" : "OFF");
+  }
 }
 
 void loop() {
   ArduinoCloud.update();
-  // Your code here 
   env.readEnvData();
   env.printEnvData();
   humidity = env.humidity;
   temperature = env.temperature;
   pressure = env.pressure;
   illuminance = env.illuminance;
+  controlHumidity();
   delay(10000);
 }
 
-void printData() {
+//In future it will make sense to have a controller class
+void controlHumidity(){
+  Serial.println("Humidity is:");
+  Serial.print(humidity);
+  if (humidity < LOW_HUMIDIFIER){
+    plug.on();
+  } else if (humidity > HIGH_HUMIDIFIER)
+  {
+    plug.off();
+  }
+}
+
+void printWifiData() {
+  Serial.println("You're connected to the network");
+  Serial.println("----------------------------------------");
   Serial.println("Board Information:");
   // print your board's IP address:
   IPAddress ip = WiFi.localIP();
@@ -104,6 +118,7 @@ void printData() {
   Serial.print("Encryption Type:");
   Serial.println(encryption, HEX);
   Serial.println();
+  Serial.println("----------------------------------------");
 }
 
 /*
@@ -138,3 +153,5 @@ void onPressureChange()  {
 void onIlluminanceChange()  {
   // Add your code here to act upon Illuminance change
 }
+
+
