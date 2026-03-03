@@ -68,3 +68,13 @@ bool ShellyPlug::parseState(const String& json, bool &stateOut) {
 
     return false;
 }
+
+void ShellyPlug::init(){
+  off();
+  on();
+  bool state;
+  if (getState(state)) {
+      Serial.print("Shelly state: ");
+      Serial.println(state ? "ON" : "OFF");
+  }
+}

@@ -2,9 +2,28 @@
 #include <Arduino_MKRENV.h>
 #include <Arduino.h>
 
+const int MAX_RETRIES = 5;
+
 EnvShieldSensors::EnvShieldSensors() :
   temperature(0), humidity(0), pressure(0),
   illuminance(0) {}
+
+void EnvShieldSensors::init(){
+  int retries = 1;
+  while (!begin() && retries++ <= MAX_RETRIES) 
+  {
+    Serial.println("Failed to initialize MKR ENV shield!");
+    Serial.println(String("Retry attempt: ") + retries + "/" + MAX_RETRIES);
+  }
+  
+  initFailedLog(retries);
+}
+
+void EnvShieldSensors::initFailedLog(int retries){
+  if (retries <= MAX_RETRIES){
+      Serial.println("Unable to init Arduino Env Shield REV 2");
+  }
+}
 
 bool EnvShieldSensors::begin() {
   return ENV.begin();

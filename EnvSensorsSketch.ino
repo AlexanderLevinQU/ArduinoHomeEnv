@@ -21,8 +21,9 @@
 #include "EnvShieldSensors.h"
 #include "ShellyPlug.h"
 
-const float LOW_HUMIDIFIER = 32.0;
-const float HIGH_HUMIDIFIER = 35.0;
+const float LOW_HUMIDIFIER = 30.0;
+const float HIGH_HUMIDIFIER = 40.0;
+const int BAUD_RATE = 9600;
 char ssid[] = SECRET_SSID;        // your network SSID (name)
 char pass[] = SECRET_PASS;    // your network password (use for WPA, or use as key for WEP)
 int status = WL_IDLE_STATUS;     // the Wifi radio's status
@@ -31,47 +32,20 @@ ShellyPlug plug(SECRET_SHELLY_PLUG_HUMIDIFIER_IP);
 
 void setup() {
   // Initialize serial and wait for port to open:
-  Serial.begin(9600);
+  Serial.begin(BAUD_RATE); //baud rate
   // This delay gives the chance to wait for a Serial Monitor without blocking if none is found
   delay(1500); 
-
   // Defined in thingProperties.h
   initProperties();
-
   // Connect to Arduino IoT Cloud
   ArduinoCloud.begin(ArduinoIoTPreferredConnection);
   setDebugMessageLevel(2);
   ArduinoCloud.printDebugInfo();
-
-  while (status != WL_CONNECTED) {
-    Serial.print("Attempting to connect to network: ");
-    Serial.println(ssid);
-    // Connect to WPA/WPA2 network:
-    status = WiFi.begin(ssid, pass);
-
-    // wait 10 seconds for connection:
-    delay(10000);
-  }
-
-  // you're connected now, so print out the data:
-  printWifiData();
-
-  if (!env.begin()) 
-  {
-    Serial.println("Failed to initialize MKR ENV shield!");
-    while (1);
-  }
-
-  plug.off();
-  plug.on();
-  bool state;
-  if (plug.getState(state)) {
-      Serial.print("Shelly state: ");
-      Serial.println(state ? "ON" : "OFF");
-  }
+  initDevices();
 }
 
 void loop() {
+  connectWifi(); //check to connect every time in case lose connection
   ArduinoCloud.update();
   env.readEnvData();
   env.printEnvData();
@@ -81,6 +55,14 @@ void loop() {
   illuminance = env.illuminance;
   controlHumidity();
   delay(10000);
+}
+
+void initDevices()
+{
+  connectWifi();
+  printWifiData();
+  env.init(); //in future make devices inherit from the device class (both can have init etc...)
+  plug.init();
 }
 
 //In future it will make sense to have a controller class
@@ -95,6 +77,17 @@ void controlHumidity(){
   }
 }
 
+void connectWifi()
+{
+    while (status != WL_CONNECTED) {
+    Serial.print("Attempting to connect to network: ");
+    Serial.println(ssid);
+    // Connect to WPA/WPA2 network:
+    status = WiFi.begin(ssid, pass);\
+    // wait 10 seconds for connection:
+    delay(10000);
+  }
+}
 void printWifiData() {
   Serial.println("You're connected to the network");
   Serial.println("----------------------------------------");
@@ -153,5 +146,6 @@ void onPressureChange()  {
 void onIlluminanceChange()  {
   // Add your code here to act upon Illuminance change
 }
+
 
 
