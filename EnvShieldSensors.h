@@ -9,9 +9,13 @@ public:
   float illuminance;
 
   EnvShieldSensors();
+  void init();
   bool begin();
   void readEnvData();
   void printEnvData();
+
+private: 
+  void initFailedLog(int retries);
 };
 
 #endif

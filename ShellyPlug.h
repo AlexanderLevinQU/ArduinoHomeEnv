@@ -7,6 +7,7 @@ class ShellyPlug {
 public:
     ShellyPlug(const char* ip, uint16_t port = 80);
 
+    void init();
     bool on();
     bool off();
     bool toggle();
